@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Flow Algorithms</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+  :root {
+    --amber:  #f5a623;
+    --green:  #4ecb8d;
+    --purple: #a78bfa;
+    --blue:   #60a5fa;
+    --red:    #f87171;
+    --bg:     #0a0a0f;
+    --bg2:    #10101a;
+    --bg3:    #181824;
+    --border: #2a2a3a;
+    --text:   #e8e8f0;
+    --muted:  #8888a8;
+  }
+
+  .reveal-viewport { background: var(--bg); }
+  .reveal .slides section { background: transparent; }
+
+  .reveal { font-family: 'DM Sans', sans-serif; color: var(--text); }
+  .reveal h1, .reveal h2, .reveal h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+  .reveal h1 { font-size: 1.6em; color: var(--amber); line-height: 1.1; }
+  .reveal h2 { font-size: 1.1em; color: var(--amber); margin-bottom: .2em; }
+  .reveal h3 { font-size: .78em; color: var(--green); margin-bottom: .15em; }
+  .reveal p  { font-size: .56em; line-height: 1.45; color: var(--text); }
+  .reveal li { font-size: .54em; line-height: 1.45; margin-bottom: .1em; }
+  .reveal code { font-family: 'JetBrains Mono', monospace; font-size: .72em; }
+  .reveal pre  { box-shadow: none; background: var(--bg3); border: 1px solid var(--border);
+                 border-radius: 6px; padding: .3em .5em; margin: .25em 0; }
+  .reveal pre code { font-size: .52em; line-height: 1.35; background: transparent; color: #cdd6f4; }
+
+  /* ── slide chrome ── */
+  .slide-hdr {
+    display: flex; align-items: center; gap: .4em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .2em; margin-bottom: .3em;
+  }
+  .slide-hdr .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .42em; font-weight: 500;
+    color: var(--bg); background: var(--amber);
+    padding: .1em .4em; border-radius: 3px;
+    letter-spacing: .04em;
+  }
+  .slide-hdr h2 { margin: 0; font-size: .95em; }
+
+  /* ── two-column ── */
+  .cols   { display: grid; gap: .5em; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-6040 { grid-template-columns: 6fr 4fr; }
+  .cols-4060 { grid-template-columns: 4fr 6fr; }
+
+  /* ── cards ── */
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: .35em .6em;
+  }
+  .card.amber { border-left: 3px solid var(--amber); }
+  .card.green { border-left: 3px solid var(--green); }
+  .card.purple{ border-left: 3px solid var(--purple); }
+  .card.blue  { border-left: 3px solid var(--blue); }
+  .card.red   { border-left: 3px solid var(--red); }
+  .card h3 { font-size: .64em; margin: 0 0 .12em; }
+  .card p  { font-size: .52em; margin: 0; color: #b8b8d0; }
+  .card ul { margin: 0; padding-left: 1em; }
+  .card li { font-size: .52em; color: #b8b8d0; margin-bottom: .02em; }
+
+  /* ── table ── */
+  .reveal table { width: 100%; border-collapse: collapse; font-size: .5em; }
+  .reveal table th { background: var(--bg3); color: var(--amber); font-weight: 600;
+                     padding: .2em .4em; border: 1px solid var(--border); text-align: left; }
+  .reveal table td { padding: .18em .4em; border: 1px solid var(--border); color: #ccc; }
+  .reveal table tr:nth-child(even) td { background: #0e0e18; }
+
+  /* ── accent spans ── */
+  .a  { color: var(--amber); font-weight: 600; }
+  .g  { color: var(--green); font-weight: 600; }
+  .p  { color: var(--purple); font-weight: 600; }
+  .b  { color: var(--blue); font-weight: 600; }
+  .r  { color: var(--red); font-weight: 600; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ── SVG graph diagrams ── */
+  svg.diagram { display: block; margin: 0 auto; overflow: visible; }
+
+  /* ── pill badges ── */
+  .pill {
+    display: inline-block; font-family: 'JetBrains Mono', monospace;
+    font-size: .44em; padding: .08em .4em; border-radius: 99px;
+    border: 1px solid; margin: 0 .08em;
+  }
+  .pill.amber { color: var(--amber); border-color: var(--amber); }
+  .pill.green { color: var(--green); border-color: var(--green); }
+  .pill.purple{ color: var(--purple); border-color: var(--purple); }
+  .pill.blue  { color: var(--blue); border-color: var(--blue); }
+
+  /* ── footer — hidden ── */
+  .reveal .slide-footer { display: none; }
+  /* title slide special */
+  .title-slide h1 { font-size: 1.8em; }
+  .title-slide .subtitle {
+    font-size: .7em; color: var(--green); font-family: 'DM Sans', sans-serif;
+    font-weight: 300; letter-spacing: .04em; margin: .3em 0 .6em;
+  }
+  .title-slide .meta { font-size: .48em; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── super-step animator ── */
+  .ss-row {
+    display: flex; gap: .25em; align-items: center;
+    margin: .1em 0; font-size: .55em; font-family: 'JetBrains Mono', monospace;
+  }
+  .ss-node {
+    padding: .2em .55em; border-radius: 5px; font-size: .9em;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  }
+  .ss-node.active { background: #1a2a1a; border-color: var(--green); color: var(--green); }
+  .ss-node.done   { background: #1a1a2a; border-color: var(--purple); color: var(--purple); }
+  .ss-arrow { color: var(--amber); }
+  .ss-label { font-size: .8em; color: var(--muted); margin-left: .3em; }
+
+  /* reduce default margins */
+  .reveal ul, .reveal ol { margin: .15em 0 .15em 1em; }
+.reveal .slides > section { display: flex !important; flex-direction: column !important; overflow-y: auto !important; align-items: stretch !important; justify-content: flex-start !important; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 01 — Title
+══════════════════════════════════════════════════════════════════ -->
+<section class="title-slide" data-background-color="#0a0a0f">
+  <div style="font-family:'JetBrains Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">COMPUTER SCIENCE FUNDAMENTALS SERIES</div>
+  <h1>Network Flow<br>Algorithms</h1>
+  <div class="subtitle">
+    Max-flow min-cut · Ford-Fulkerson · Edmonds-Karp ·<br>
+    Dinic's · Bipartite matching · Cost flow
+  </div>
+  <div style="width:60px; height:3px; background:var(--amber); margin-bottom:1.4em;"></div>
+  <div class="meta">
+    Mid-level software engineer track &nbsp;·&nbsp; 20 slides
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 02 — Flow Networks -- Foundations
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">02</span>
+    <h2>Flow Networks — Foundations</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>What is a flow network?</h3>
+      <p>A directed graph <code>G = (V, E)</code> with two distinguished vertices and a capacity function:</p>
+      <ul>
+        <li><span class="a">Source (s)</span> — where flow originates; no incoming flow constraint</li>
+        <li><span class="a">Sink (t)</span> — where flow is consumed; no outgoing flow constraint</li>
+        <li><span class="g">Capacity c(u,v)</span> — maximum flow allowed on edge (u,v); always non-negative</li>
+        <li><span class="b">Flow f(u,v)</span> — the actual flow on edge (u,v)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Formal definition</h3>
+      <p>A flow network is a tuple <code>(G, s, t, c)</code>:</p>
+      <pre><code>G = (V, E)    directed graph
+s ∈ V         source vertex
+t ∈ V         sink vertex
+c: E → R⁺     capacity function</code></pre>
+      <div class="card amber" style="margin-top:.4em">
+        <p>Flow networks model any system where something moves through a constrained network — water in pipes, data in networks, goods through supply chains.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG diagram: simple flow network -->
+  <svg class="diagram" viewBox="0 0 520 120" width="520" height="120" style="margin-top:.4em">
+    <defs>
+      <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f5a623"/></marker>
+    </defs>
+    <circle cx="40" cy="60" r="18" fill="#181824" stroke="#f5a623" stroke-width="2"/>
+    <text x="40" y="65" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono" font-size="14" font-weight="700">s</text>
+    <circle cx="180" cy="25" r="16" fill="#181824" stroke="#2a2a3a" stroke-width="1.5"/>
+    <text x="180" y="30" text-anchor="middle" fill="#e8e8f0" font-family="JetBrains Mono" font-size="12">a</text>
+    <circle cx="180" cy="95" r="16" fill="#181824" stroke="#2a2a3a" stroke-width="1.5"/>
+    <text x="180" y="100" text-anchor="middle" fill="#e8e8f0" font-family="JetBrains Mono" font-size="12">b</text>
+    <circle cx="340" cy="25" r="16" fill="#181824" stroke="#2a2a3a" stroke-width="1.5"/>
+    <text x="340" y="30" text-anchor="middle" fill="#e8e8f0" font-family="JetBrains Mono" font-size="12">c</text>
+    <circle cx="340" cy="95" r="16" fill="#181824" stroke="#2a2a3a" stroke-width="1.5"/>
+    <text x="340" y="100" text-anchor="middle" fill="#e8e8f0" font-family="JetBrains Mono" font-size="12">d</text>
+    <circle cx="480" cy="60" r="18" fill="#181824" stroke="#4ecb8d" stroke-width="2"/>
+    <text x="480" y="65" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono" font-size="14" font-weight="700">t</text>
+    <!-- edges -->
+    <line x1="58" y1="48" x2="162" y2="28" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="105" y="32" fill="#8888a8" font-family="JetBrains Mono" font-size="11">10</text>
+    <line x1="58" y1="72" x2="162" y2="92" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="105" y="92" fill="#8888a8" font-family="JetBrains Mono" font-size="11">8</text>
+    <line x1="196" y1="25" x2="322" y2="25" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="258" y="20" fill="#8888a8" font-family="JetBrains Mono" font-size="11">6</text>
+    <line x1="196" y1="95" x2="322" y2="95" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="258" y="112" fill="#8888a8" font-family="JetBrains Mono" font-size="11">9</text>
+    <line x1="190" y1="38" x2="330" y2="82" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="265" y="55" fill="#8888a8" font-family="JetBrains Mono" font-size="11">4</text>
+    <line x1="356" y1="28" x2="462" y2="52" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="412" y="34" fill="#8888a8" font-family="JetBrains Mono" font-size="11">7</text>
+    <line x1="356" y1="92" x2="462" y2="68" stroke="#f5a623" stroke-width="1.5" marker-end="url(#ah)"/>
+    <text x="412" y="92" fill="#8888a8" font-family="JetBrains Mono" font-size="11">12</text>
+  </svg>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 03 — Capacity, Flow & Conservation
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">03</span>
+    <h2>Capacity, Flow &amp; Conservation</h2>
+  </div>
+  <h3>Flow constraints</h3>
+  <p>Every valid flow must satisfy two properties:</p>
+  <table>
+    <thead><tr><th>Constraint</th><th>Formal</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="a">Capacity</span></td><td><code>0 ≤ f(u,v) ≤ c(u,v)</code></td><td>Flow on an edge cannot exceed its capacity</td></tr>
+      <tr><td><span class="g">Conservation</span></td><td><code>Σ f(u,v) = Σ f(v,w)</code> for all v ≠ s,t</td><td>Flow into a node equals flow out of that node</td></tr>
+    </tbody>
+  </table>
+  <div class="cols cols-2" style="margin-top:.4em">
+    <div>
+      <h3>Value of a flow</h3>
+      <p>The total flow leaving the source (equivalently, arriving at the sink):</p>
+      <pre><code>|f| = Σ f(s,v) - Σ f(v,s)
+    = Σ f(v,t) - Σ f(t,v)</code></pre>
+    </div>
+    <div class="card purple">
+      <h3>Maximum flow problem</h3>
+      <p>Find a flow <code>f</code> that maximises <code>|f|</code> while satisfying capacity and conservation constraints. This is a linear programming problem with efficient combinatorial solutions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 04 — Max-Flow Min-Cut Theorem
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">04</span>
+    <h2>Max-Flow Min-Cut Theorem</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>s-t Cut</h3>
+      <p>A partition of vertices into sets <code>S</code> and <code>T</code> where <code>s ∈ S</code> and <code>t ∈ T</code>. The capacity of the cut is:</p>
+      <pre><code>c(S, T) = Σ c(u,v)  for all u ∈ S, v ∈ T</code></pre>
+      <p>Only edges crossing from S to T count — not edges from T to S.</p>
+    </div>
+    <div>
+      <h3>The theorem (Ford &amp; Fulkerson, 1956)</h3>
+      <div class="card amber" style="margin-top:.3em">
+        <p style="font-size:.58em; color:var(--text)">In any flow network, the <span class="a">maximum flow</span> from s to t equals the <span class="g">minimum capacity</span> of any s-t cut:</p>
+        <pre><code>max |f| = min c(S, T)</code></pre>
+      </div>
+    </div>
+  </div>
+  <h3 style="margin-top:.3em">Why it matters</h3>
+  <ul>
+    <li>Provides a <span class="a">certificate of optimality</span> — if you find a flow and a cut with equal value, both are optimal</li>
+    <li>Connects two seemingly different problems — maximising flow and minimising cuts</li>
+    <li>Foundation for <span class="p">duality</span> in network optimisation</li>
+  </ul>
+  <div class="card green" style="margin-top:.3em">
+    <p>The max-flow min-cut theorem is a special case of LP strong duality. Every max-flow algorithm implicitly finds a minimum cut as well.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 05 — Residual Graphs & Augmenting Paths
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">05</span>
+    <h2>Residual Graphs &amp; Augmenting Paths</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Residual graph</h3>
+      <p>Given a flow <code>f</code>, the residual graph <code>G<sub>f</sub></code> shows remaining capacity on each edge:</p>
+      <pre><code>Forward edge:  c_f(u,v) = c(u,v) - f(u,v)
+  (room to push more flow)
+
+Backward edge: c_f(v,u) = f(u,v)
+  (room to cancel existing flow)</code></pre>
+    </div>
+    <div>
+      <h3>Augmenting path</h3>
+      <p>A path from <code>s</code> to <code>t</code> in the residual graph <code>G<sub>f</sub></code>. The bottleneck is the minimum residual capacity along the path.</p>
+      <div class="card amber" style="margin-top:.3em">
+        <h3>Augmenting Path Theorem</h3>
+        <p>A flow <code>f</code> is maximum if and only if there is no augmenting path from s to t in G<sub>f</sub>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="card green" style="margin-top:.4em">
+    <p>Backward edges are the key insight — they allow algorithms to "undo" earlier flow decisions. Without them, greedy approaches can get stuck at suboptimal solutions.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 06 — Ford-Fulkerson Method
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">06</span>
+    <h2>Ford-Fulkerson Method</h2>
+  </div>
+  <div class="cols cols-6040">
+    <div>
+      <h3>The method (1956)</h3>
+      <pre><code>Ford-Fulkerson(G, s, t):
+    initialise f(u,v) = 0 for all edges
+    while ∃ augmenting path p in G_f:
+        cf(p) = min residual capacity along p
+        for each edge (u,v) in p:
+            f(u,v) += cf(p)
+            f(v,u) -= cf(p)
+    return f</code></pre>
+      <h3 style="margin-top:.3em">Key properties</h3>
+      <ul>
+        <li><span class="a">Correctness</span> — terminates with max flow when capacities are integers</li>
+        <li><span class="g">Integer capacities</span> — runtime <code>O(E · |f*|)</code> where <code>|f*|</code> is max flow value</li>
+        <li><span class="r">Irrational capacities</span> — may not terminate; can converge to wrong answer</li>
+        <li><span class="p">Path choice matters</span> — poor choices lead to exponential iterations</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card red">
+        <h3>The bad example</h3>
+        <p>With integer capacities, a poorly chosen path strategy can require <code>|f*|</code> augmentations. If max flow is 2,000,000, that is 2,000,000 iterations — each augmenting by 1.</p>
+      </div>
+      <div class="card purple" style="margin-top:.4em">
+        <h3>Method vs algorithm</h3>
+        <p>Ford-Fulkerson is a <em>method</em>, not an algorithm — it does not specify how to find the augmenting path. The choice of path-finding strategy determines the actual complexity.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 07 — Edmonds-Karp Algorithm
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">07</span>
+    <h2>Edmonds-Karp Algorithm</h2>
+  </div>
+  <div class="cols cols-6040">
+    <div>
+      <h3>BFS-based Ford-Fulkerson (1972)</h3>
+      <p>Always choose the <span class="a">shortest augmenting path</span> (fewest edges) using breadth-first search.</p>
+      <pre><code>Edmonds-Karp(G, s, t):
+    initialise f = 0
+    while BFS finds path p from s to t in G_f:
+        cf(p) = bottleneck of p
+        augment flow along p by cf(p)
+    return f</code></pre>
+    </div>
+    <div>
+      <h3>Complexity</h3>
+      <table>
+        <thead><tr><th>Metric</th><th>Bound</th></tr></thead>
+        <tbody>
+          <tr><td><span class="a">Augmentations</span></td><td><code>O(VE)</code></td></tr>
+          <tr><td><span class="g">Each BFS</span></td><td><code>O(E)</code></td></tr>
+          <tr><td><span class="p">Total</span></td><td><code>O(V · E²)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <h3 style="margin-top:.3em">Why BFS helps</h3>
+  <ul>
+    <li>Shortest paths in the residual graph are <span class="a">monotonically non-decreasing</span></li>
+    <li>After at most <code>O(E)</code> augmentations, some shortest path distance increases</li>
+    <li>At most <code>O(V)</code> distance increases possible — hence <code>O(VE)</code> total augmentations</li>
+  </ul>
+  <div class="card green" style="margin-top:.3em">
+    <p>Edmonds-Karp is the first <span class="a">polynomial-time</span> max-flow algorithm. Independent of flow value, always <code>O(VE²)</code>.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 08 — Dinic's Algorithm
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">08</span>
+    <h2>Dinic's Algorithm</h2>
+  </div>
+  <div class="cols cols-6040">
+    <div>
+      <h3>Level graph and blocking flow (1970)</h3>
+      <p>Dinic's algorithm builds a <span class="a">level graph</span> using BFS and finds <span class="g">blocking flows</span> using DFS.</p>
+      <pre><code>Dinic(G, s, t):
+    while BFS builds level graph L of G_f:
+        while ∃ blocking flow f' in L:
+            augment f by f'
+        rebuild level graph
+    return f</code></pre>
+    </div>
+    <div>
+      <h3>Complexity</h3>
+      <table>
+        <thead><tr><th>Metric</th><th>Bound</th></tr></thead>
+        <tbody>
+          <tr><td><span class="a">Phases</span></td><td><code>O(V)</code></td></tr>
+          <tr><td><span class="g">Blocking flow</span></td><td><code>O(VE)</code> per phase</td></tr>
+          <tr><td><span class="p">Total</span></td><td><code>O(V² · E)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <h3 style="margin-top:.3em">Special cases</h3>
+  <div class="cols cols-2" style="margin-top:.2em">
+    <div class="card amber">
+      <h3>Unit-capacity graphs</h3>
+      <p><code>O(E · √V)</code> — applies directly to bipartite matching problems</p>
+    </div>
+    <div class="card green">
+      <h3>Unit networks</h3>
+      <p><code>O(E · √V)</code> — every vertex has in-degree or out-degree 1</p>
+    </div>
+  </div>
+  <div class="card purple" style="margin-top:.3em">
+    <p>Dinic's algorithm is strictly faster than Edmonds-Karp. The improvement comes from finding <span class="a">multiple augmenting paths</span> per BFS phase using blocking flows.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 09 — Blocking Flows & Level Graphs
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">09</span>
+    <h2>Blocking Flows &amp; Level Graphs</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Level graph construction</h3>
+      <ol>
+        <li>Run BFS from source <code>s</code> in <code>G<sub>f</sub></code></li>
+        <li>Assign level <code>d(v)</code> = shortest distance from s</li>
+        <li>Keep only edges <code>(u,v)</code> where <code>d(v) = d(u) + 1</code></li>
+        <li>Remove dead-end vertices with no path to <code>t</code></li>
+      </ol>
+      <h3 style="margin-top:.3em">What is a blocking flow?</h3>
+      <p>A flow in the level graph such that every s-t path contains at least one <span class="a">saturated edge</span>. Not necessarily a maximum flow — but simpler to find.</p>
+    </div>
+    <div>
+      <h3>Finding blocking flows</h3>
+      <pre><code>DFS from s:
+    advance along unsaturated edges
+    if reach t:
+        augment along path, retreat
+    if stuck at v:
+        delete v from level graph
+        retreat</code></pre>
+      <ul>
+        <li>Each advance or retreat takes <code>O(1)</code> amortised</li>
+        <li>At most <code>O(E)</code> advances and <code>O(V)</code> retreats per blocking flow</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card green" style="margin-top:.3em">
+    <p>The level graph acts as a "pruned" version of the residual graph, keeping only edges that make <span class="a">forward progress</span> toward the sink.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 10 — Push-Relabel Algorithm
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">10</span>
+    <h2>Push-Relabel Algorithm</h2>
+  </div>
+  <p>A different paradigm (Goldberg &amp; Tarjan, 1988). Instead of finding augmenting paths, push-relabel maintains a <span class="a">preflow</span> — conservation is relaxed, allowing excess at vertices.</p>
+  <div class="cols cols-2" style="margin-top:.2em">
+    <div>
+      <h3>Core concepts</h3>
+      <table>
+        <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="a">Preflow</span></td><td>Flow where inflow can exceed outflow (excess allowed)</td></tr>
+          <tr><td><span class="g">Excess e(v)</span></td><td><code>Σ f(u,v) - Σ f(v,w)</code> — flow pooling at v</td></tr>
+          <tr><td><span class="p">Height h(v)</span></td><td>Label for each vertex; s starts at <code>|V|</code>, t at 0</td></tr>
+          <tr><td><span class="b">Active vertex</span></td><td>A vertex with <code>e(v) > 0</code> and <code>v ≠ s, t</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Operations</h3>
+      <ul>
+        <li><span class="a">Push(u,v)</span> — send <code>min(e(u), c<sub>f</sub>(u,v))</code> flow; requires <code>h(u) = h(v) + 1</code></li>
+        <li><span class="g">Relabel(u)</span> — increase <code>h(u)</code> to <code>min(h(v) + 1)</code> over admissible neighbours</li>
+      </ul>
+      <pre><code>Push-Relabel(G, s, t):
+    h(s) = |V|, saturate all edges from s
+    while ∃ active vertex u:
+        if u has admissible edge (u,v):
+            push(u, v)
+        else: relabel(u)</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 11 — Push-Relabel -- Discharge & Heuristics
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">11</span>
+    <h2>Push-Relabel — Discharge &amp; Heuristics</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Complexity by variant</h3>
+      <table>
+        <thead><tr><th>Variant</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>Generic push-relabel</td><td><code>O(V² · E)</code></td></tr>
+          <tr><td>FIFO selection</td><td><code>O(V³)</code></td></tr>
+          <tr><td><span class="a">Highest-label</span></td><td><code>O(V² · √E)</code></td></tr>
+        </tbody>
+      </table>
+      <h3 style="margin-top:.3em">Gap heuristic</h3>
+      <p>If no vertex has height <code>h</code>, then any vertex with height above <code>h</code> cannot reach the sink. Relabel all such vertices to <code>|V| + 1</code> — they drain back to source.</p>
+    </div>
+    <div>
+      <h3>Global relabelling</h3>
+      <p>Periodically recompute exact heights using reverse BFS from <code>t</code>. Dramatically reduces wasted pushes in practice.</p>
+      <div class="card amber" style="margin-top:.3em">
+        <h3>Why push-relabel matters</h3>
+        <ul>
+          <li>Asymptotically fastest known algorithms for max flow</li>
+          <li>Excellent practical performance with heuristics</li>
+          <li>Naturally parallel — multiple active vertices simultaneously</li>
+          <li>Foundation for minimum cut algorithms</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="card green" style="margin-top:.3em">
+    <p>In practice, push-relabel with <span class="a">highest-label selection</span> and gap/global relabelling heuristics is the fastest max-flow algorithm for dense graphs.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 12 — Minimum Cost Flow
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">12</span>
+    <h2>Minimum Cost Flow</h2>
+  </div>
+  <h3>Problem statement</h3>
+  <p>Given a flow network where each edge has both a <span class="a">capacity</span> and a <span class="g">cost per unit of flow</span>, find a flow of value <code>d</code> that minimises total cost.</p>
+  <pre><code>Minimise:   Σ a(u,v) · f(u,v)    over all edges
+Subject to: flow conservation, capacity constraints, |f| = d</code></pre>
+  <div class="cols cols-2" style="margin-top:.3em">
+    <div>
+      <h3>Relationship to max flow</h3>
+      <table>
+        <thead><tr><th>Problem</th><th>Objective</th></tr></thead>
+        <tbody>
+          <tr><td><span class="a">Max flow</span></td><td>Maximise flow value, no costs</td></tr>
+          <tr><td><span class="g">Min-cost flow</span></td><td>Fix flow value, minimise cost</td></tr>
+          <tr><td><span class="p">Min-cost max flow</span></td><td>Maximise flow, break ties by min cost</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Special cases</h3>
+      <ul>
+        <li><span class="b">Shortest path</span> — min-cost flow with <code>d = 1</code></li>
+        <li><span class="g">Assignment problem</span> — min-cost perfect matching in bipartite graph</li>
+        <li><span class="a">Transportation problem</span> — supply and demand at nodes, costs on edges</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card purple" style="margin-top:.3em">
+    <p>Min-cost flow is one of the most powerful network optimisation models. Many seemingly different problems reduce to it.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 13 — Minimum Cost Flow -- Algorithms
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">13</span>
+    <h2>Minimum Cost Flow — Algorithms</h2>
+  </div>
+  <div class="cols cols-3">
+    <div class="card amber">
+      <h3>Successive shortest paths</h3>
+      <p>Repeatedly find the shortest (cheapest) augmenting path and send flow along it. Uses Bellman-Ford or Dijkstra with potentials.</p>
+      <pre><code>while |f| < d:
+  find shortest path p
+  in G_f (by cost)
+  augment along p</code></pre>
+      <p style="margin-top:.3em"><code>O(d · (E + V log V))</code> with Dijkstra + potentials</p>
+    </div>
+    <div class="card green">
+      <h3>Cycle-cancelling</h3>
+      <p>Start with any feasible flow. Find <span class="a">negative-cost cycles</span> in the residual graph and push flow around them until none remain.</p>
+      <p style="margin-top:.3em"><code>O(V · E² · C · U)</code> — pseudo-polynomial</p>
+    </div>
+    <div class="card purple">
+      <h3>Network simplex</h3>
+      <p>Specialised simplex method for network flow LPs. Maintains a <span class="a">spanning tree basis</span>. Strongly polynomial in practice and often the fastest.</p>
+      <p style="margin-top:.3em">Practical choice for large-scale problems</p>
+    </div>
+  </div>
+  <div class="card blue" style="margin-top:.4em">
+    <p>For competitive programming: successive shortest paths with <span class="a">Dijkstra + potentials</span> (SPFA/Johnson) is the standard min-cost flow template.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 14 — Maximum Bipartite Matching
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">14</span>
+    <h2>Maximum Bipartite Matching</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>The problem</h3>
+      <p>Given a bipartite graph <code>G = (L ∪ R, E)</code>, find the largest set of edges with no shared endpoints.</p>
+      <h3 style="margin-top:.3em">Reduction to max flow</h3>
+      <ol>
+        <li>Add source <code>s</code> connected to all vertices in <code>L</code> (capacity 1)</li>
+        <li>Add sink <code>t</code> connected from all vertices in <code>R</code> (capacity 1)</li>
+        <li>All original edges have capacity 1</li>
+        <li>Max flow in this network = maximum matching size</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Koenig's theorem</h3>
+      <div class="card amber" style="margin-bottom:.3em">
+        <p style="font-size:.56em; color:var(--text)"><code>max matching = min vertex cover</code> &nbsp; (bipartite only)</p>
+      </div>
+      <h3>Hopcroft-Karp algorithm</h3>
+      <p>Specialised for bipartite matching. Uses BFS to find maximal sets of shortest augmenting paths, then DFS to augment.</p>
+      <p><span class="a">Complexity:</span> <code>O(E · √V)</code> — equivalent to Dinic's on unit networks.</p>
+    </div>
+  </div>
+
+  <!-- SVG: bipartite matching as flow -->
+  <svg class="diagram" viewBox="0 0 480 130" width="480" height="130" style="margin-top:.3em">
+    <circle cx="30" cy="65" r="16" fill="#181824" stroke="#f5a623" stroke-width="2"/>
+    <text x="30" y="70" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono" font-size="12" font-weight="700">s</text>
+    <circle cx="450" cy="65" r="16" fill="#181824" stroke="#4ecb8d" stroke-width="2"/>
+    <text x="450" y="70" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono" font-size="12" font-weight="700">t</text>
+    <!-- Left set -->
+    <circle cx="140" cy="25" r="14" fill="#181824" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="140" y="30" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="11">L1</text>
+    <circle cx="140" cy="65" r="14" fill="#181824" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="140" y="70" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="11">L2</text>
+    <circle cx="140" cy="105" r="14" fill="#181824" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="140" y="110" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="11">L3</text>
+    <!-- Right set -->
+    <circle cx="320" cy="25" r="14" fill="#181824" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="320" y="30" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">R1</text>
+    <circle cx="320" cy="65" r="14" fill="#181824" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="320" y="70" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">R2</text>
+    <circle cx="320" cy="105" r="14" fill="#181824" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="320" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">R3</text>
+    <!-- s to L -->
+    <line x1="46" y1="55" x2="124" y2="28" stroke="#f5a623" stroke-width="1" marker-end="url(#ah)"/>
+    <line x1="46" y1="65" x2="124" y2="65" stroke="#f5a623" stroke-width="1" marker-end="url(#ah)"/>
+    <line x1="46" y1="75" x2="124" y2="102" stroke="#f5a623" stroke-width="1" marker-end="url(#ah)"/>
+    <!-- L to R (matching edges) -->
+    <line x1="154" y1="25" x2="304" y2="25" stroke="#4ecb8d" stroke-width="2" marker-end="url(#ah)"/>
+    <line x1="154" y1="30" x2="304" y2="62" stroke="#2a2a3a" stroke-width="1" marker-end="url(#ah)"/>
+    <line x1="154" y1="65" x2="304" y2="65" stroke="#4ecb8d" stroke-width="2" marker-end="url(#ah)"/>
+    <line x1="154" y1="105" x2="304" y2="105" stroke="#4ecb8d" stroke-width="2" marker-end="url(#ah)"/>
+    <line x1="154" y1="100" x2="304" y2="68" stroke="#2a2a3a" stroke-width="1" marker-end="url(#ah)"/>
+    <!-- R to t -->
+    <line x1="334" y1="28" x2="434" y2="55" stroke="#f5a623" stroke-width="1" marker-end="url(#ah)"/>
+    <line x1="334" y1="65" x2="434" y2="65" stroke="#f5a623" stroke-width="1" marker-end="url(#ah)"/>
+    <line x1="334" y1="102" x2="434" y2="75" stroke="#f5a623" stroke-width="1" marker-end="url(#ah)"/>
+  </svg>
+  <div class="card green" style="margin-top:.2em">
+    <p>Any bipartite matching problem can be solved as max flow. For unweighted, Hopcroft-Karp is optimal. For weighted, use the Hungarian algorithm or min-cost flow.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 15 — Hungarian Algorithm
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">15</span>
+    <h2>Hungarian Algorithm</h2>
+  </div>
+  <p><span class="a">Weighted bipartite matching</span> (Kuhn, 1955). Find a perfect matching in a weighted bipartite graph that minimises (or maximises) total weight.</p>
+  <div class="cols cols-2" style="margin-top:.2em">
+    <div>
+      <h3>Core idea</h3>
+      <p>Maintain <span class="g">feasible vertex labels</span> (potentials) such that:</p>
+      <pre><code>l(x) + l(y) ≥ w(x,y)   ∀ x ∈ L, y ∈ R</code></pre>
+      <p>The <span class="a">equality subgraph</span> contains only edges where <code>l(x) + l(y) = w(x,y)</code>. A perfect matching in the equality subgraph is optimal.</p>
+    </div>
+    <div>
+      <h3>Algorithm outline</h3>
+      <ol>
+        <li>Initialise: <code>l(x) = max w(x,y)</code> for left, <code>l(y) = 0</code> for right</li>
+        <li>For each unmatched left vertex, try augmenting in equality subgraph</li>
+        <li>If no path, adjust labels to expand equality subgraph</li>
+        <li>Repeat until all vertices matched</li>
+      </ol>
+    </div>
+  </div>
+  <div class="cols cols-2" style="margin-top:.3em">
+    <div>
+      <h3>Complexity</h3>
+      <table>
+        <thead><tr><th>Implementation</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>Naive</td><td><code>O(n⁴)</code></td></tr>
+          <tr><td><span class="a">Shortest-path optimisation</span></td><td><code>O(n³)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card purple">
+      <p>The Hungarian algorithm solves the <span class="a">assignment problem</span> optimally. It can also be viewed as a primal-dual method for the assignment LP.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 16 — Applications -- Transportation & Assignment
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">16</span>
+    <h2>Applications — Transportation &amp; Assignment</h2>
+  </div>
+  <div class="cols cols-3">
+    <div class="card amber">
+      <h3>Transportation problem</h3>
+      <p>Ship goods from <code>m</code> suppliers to <code>n</code> consumers at minimum cost, respecting supply/demand.</p>
+      <table style="margin-top:.3em">
+        <thead><tr><th>Component</th><th>Network model</th></tr></thead>
+        <tbody>
+          <tr><td>Suppliers</td><td>Source nodes with supply s<sub>i</sub></td></tr>
+          <tr><td>Consumers</td><td>Sink nodes with demand d<sub>j</sub></td></tr>
+          <tr><td>Routes</td><td>Edges with capacity &amp; cost</td></tr>
+          <tr><td>Objective</td><td>Min-cost flow</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card green">
+      <h3>Assignment problem</h3>
+      <p>Assign <code>n</code> workers to <code>n</code> jobs, one-to-one, minimising total cost.</p>
+      <p style="margin-top:.3em">Special case of transportation where all supplies and demands are 1.</p>
+      <p style="margin-top:.3em">Solved optimally by the <span class="a">Hungarian algorithm</span> in <code>O(n³)</code> or by min-cost flow.</p>
+    </div>
+    <div class="card purple">
+      <h3>Airline scheduling</h3>
+      <ul>
+        <li>Aircraft routing: flow through time-expanded flight network</li>
+        <li>Crew scheduling: min-cost flow to cover all flights with minimum crews</li>
+        <li>Gate assignment: matching flights to gates over time</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card blue" style="margin-top:.4em">
+    <p>The simplex method was originally developed (Dantzig, 1947) partly to solve military transportation and logistics problems — network flow was one of the first LP applications.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 17 — Applications -- Image Segmentation & More
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">17</span>
+    <h2>Applications — Image Segmentation &amp; More</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Image segmentation via min-cut</h3>
+      <p>Partition image pixels into foreground (F) and background (B):</p>
+      <ol>
+        <li>Create a node per pixel</li>
+        <li>Source <code>s</code> = foreground label; sink <code>t</code> = background label</li>
+        <li>Edge <code>(s, pixel)</code> = likelihood pixel is foreground</li>
+        <li>Edge <code>(pixel, t)</code> = likelihood pixel is background</li>
+        <li>Edge <code>(pixel<sub>i</sub>, pixel<sub>j</sub>)</code> = smoothness penalty for different labels</li>
+        <li><span class="a">Minimum s-t cut</span> gives optimal binary segmentation</li>
+      </ol>
+    </div>
+    <div>
+      <div class="card amber">
+        <h3>Network reliability</h3>
+        <p>The max number of edge-disjoint paths between two nodes equals the minimum edge cut (<span class="g">Menger's theorem</span>). Max flow computes this directly.</p>
+      </div>
+      <div class="card green" style="margin-top:.3em">
+        <h3>Baseball elimination</h3>
+        <p>Determine if a team is mathematically eliminated from winning the league. Formulated as max-flow by Schwartz (1966).</p>
+      </div>
+      <div class="card purple" style="margin-top:.3em">
+        <h3>Project selection</h3>
+        <p>Choose a subset of projects to maximise profit, respecting prerequisite dependencies. Equivalent to min-cut.</p>
+      </div>
+    </div>
+  </div>
+  <div class="card blue" style="margin-top:.3em">
+    <p>The power of network flow lies in <span class="a">modelling</span>: once a problem is cast as a flow network, efficient algorithms immediately apply.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 18 — Network Flow Modelling Techniques
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">18</span>
+    <h2>Network Flow Modelling Techniques</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3>Vertex capacities</h3>
+        <p>To limit flow through vertex <code>v</code>, split it into <code>v<sub>in</sub></code> and <code>v<sub>out</sub></code>:</p>
+        <pre><code>Original:  u → v → w
+Split:     u → v_in →(cap)→ v_out → w</code></pre>
+      </div>
+      <div class="card green" style="margin-top:.3em">
+        <h3>Multiple sources/sinks</h3>
+        <p>Add a <span class="a">super-source S</span> connected to all sources and a <span class="a">super-sink T</span> connected from all sinks. Edge capacities encode supply/demand.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3>Lower bounds on flow</h3>
+        <p>If edge <code>(u,v)</code> must carry at least <code>l(u,v)</code> flow:</p>
+        <ol>
+          <li>Send <code>l(u,v)</code> flow on every lower-bounded edge</li>
+          <li>Adjust supply/demand to compensate</li>
+          <li>Solve the resulting standard flow problem</li>
+        </ol>
+      </div>
+      <div class="card blue" style="margin-top:.3em">
+        <h3>Undirected edges &amp; time expansion</h3>
+        <p><span class="a">Undirected:</span> replace with two directed edges, same capacity each.</p>
+        <p style="margin-top:.2em"><span class="g">Time-expanded:</span> replicate graph for each time step. Edges across time model temporal constraints.</p>
+      </div>
+    </div>
+  </div>
+  <div class="card red" style="margin-top:.3em">
+    <p>Mastering these transformations is the key skill for network flow in practice and competitions. The algorithm is the easy part — the <span class="a">modelling</span> is the hard part.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 19 — Complexity Comparison
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">19</span>
+    <h2>Complexity Comparison</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Max-flow algorithms</h3>
+      <table>
+        <thead><tr><th>Algorithm</th><th>Time</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Ford-Fulkerson</td><td><code>O(E·|f*|)</code></td><td>Pseudo-polynomial</td></tr>
+          <tr><td>Edmonds-Karp</td><td><code>O(V·E²)</code></td><td>BFS shortest path</td></tr>
+          <tr><td>Dinic's</td><td><code>O(V²·E)</code></td><td>Blocking flows</td></tr>
+          <tr><td>Push-Relabel</td><td><code>O(V²·E)</code></td><td>Generic</td></tr>
+          <tr><td><span class="a">Highest-label PR</span></td><td><code>O(V²·√E)</code></td><td>Best practical</td></tr>
+          <tr><td>Orlin</td><td><code>O(VE)</code></td><td>Optimal dense (2013)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Related problems</h3>
+      <table>
+        <thead><tr><th>Problem</th><th>Best known</th></tr></thead>
+        <tbody>
+          <tr><td>Min-cost flow</td><td><code>O(VE log V log(VC))</code></td></tr>
+          <tr><td>Bipartite matching</td><td><code>O(E·√V)</code> Hopcroft-Karp</td></tr>
+          <tr><td>Weighted matching</td><td><code>O(n³)</code> Hungarian</td></tr>
+          <tr><td>General matching</td><td><code>O(V·E)</code> Edmonds' blossom</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card green" style="margin-top:.4em">
+    <p>In practice, <span class="a">push-relabel with heuristics</span> dominates for large dense graphs. <span class="p">Dinic's</span> is preferred for sparse graphs and competitive programming.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SLIDE 20 — Summary & Further Reading
+══════════════════════════════════════════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">20</span>
+    <h2>Summary &amp; Further Reading</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Key takeaways</h3>
+      <ul>
+        <li>Flow networks model constrained movement: <span class="a">capacity</span>, <span class="g">conservation</span>, source-to-sink</li>
+        <li>Max-flow min-cut theorem connects flow maximisation to cut minimisation via LP duality</li>
+        <li>Ford-Fulkerson is foundational; Edmonds-Karp, Dinic's, and push-relabel improve to polynomial time</li>
+        <li>Dinic's achieves <code>O(V²E)</code> and is optimal for unit-capacity graphs at <code>O(E√V)</code></li>
+        <li>Push-relabel with heuristics is fastest in practice for dense graphs</li>
+        <li>Min-cost flow generalises max flow with edge costs</li>
+        <li>Bipartite matching reduces to max flow; Hungarian solves weighted assignment in <code>O(n³)</code></li>
+        <li>Applications: transportation, scheduling, image segmentation, network reliability</li>
+        <li><span class="a">Modelling techniques</span> (vertex splitting, super-sources, lower bounds) are the key practical skill</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Recommended reading</h3>
+      <table>
+        <thead><tr><th>Source</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="a">CLRS</span></td><td><em>Introduction to Algorithms</em>, Ch. 24-26</td></tr>
+          <tr><td><span class="a">Ahuja et al.</span></td><td><em>Network Flows</em> — the definitive reference</td></tr>
+          <tr><td><span class="a">Kleinberg &amp; Tardos</span></td><td><em>Algorithm Design</em>, Ch. 7-8</td></tr>
+          <tr><td><span class="a">Schrijver</span></td><td><em>Combinatorial Optimization</em></td></tr>
+          <tr><td><span class="a">Jeff Erickson</span></td><td>Free textbook — excellent flow chapters</td></tr>
+          <tr><td><span class="a">CP-Algorithms</span></td><td>Implementation-focused flow tutorials</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  transition: 'fade',
+  transitionSpeed: 'fast',
+  controls: true,
+  progress: true,
+  center: false,
+  width: 1100,
+  height: 900,
+  margin: 0.01,
+  plugins: [RevealHighlight],
+  highlight: { theme: 'monokai' }
+});
+</script>
+<script>
+(function(){
+  var h = Reveal.getConfig().height || 900;
+  var m = Reveal.getConfig().margin || 0.02;
+  var maxH = Math.floor(h * (1 - 2 * m)) + 'px';
+  function fixSlides(){
+    document.querySelectorAll('.reveal .slides>section,.reveal .slides>section>section').forEach(function(s){
+      s.style.display = 'block';
+      s.style.maxHeight = maxH;
+    });
+  }
+  Reveal.on('ready', fixSlides);
+  Reveal.on('slidechanged', fixSlides);
+})();
+</script>
+</body>
+</html>
